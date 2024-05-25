@@ -2,12 +2,12 @@
 
 ## Overview
 
-The Focused Inference Project is an advanced research initiative aimed at improving Simultaneous Localization and Mapping (SLAM) by leveraging information-theoretic approaches to reduce the number of landmarks without compromising the accuracy and efficiency of navigation. This project integrates various landmark removal algorithms and evaluates their performance using metrics such as Average Trajectory Error (ATE), Average Rotation Error (ARE), and Uncertainty Determinant (UD).
+The Focused Inference Project is an undergrad final project aimed at improving Simultaneous Localization and Mapping (SLAM) by leveraging information-theoretic approaches to reduce the number of landmarks without compromising the accuracy and efficiency of navigation. This project integrates various landmark removal algorithms and evaluates their performance using metrics such as Average Trajectory Error (ATE), Average Rotation Error (ARE), and Uncertainty Determinant (UD).
 
 ## Objectives
 
 1. **Reduce Landmark Density**: Implement and evaluate several algorithms to reduce the number of landmarks while maintaining accurate localization and mapping.
-2. **Improve Computational Efficiency**: Enhance SLAM algorithms to be more computationally efficient by reducing the number of landmarks.
+2. **Improve Computational Efficiency**: Reduce the number of landmarks to make SLAM algorithms more computationally efficient.
 3. **Maintain Accuracy**: Ensure that the reduced landmark set provides sufficient information for accurate SLAM performance.
 
 ## Algorithms
@@ -16,7 +16,7 @@ The Focused Inference Project is an advanced research initiative aimed at improv
 
 1. **Least Degree Based Removal**: Removes landmarks with the least connectivity (degree) first.
 2. **Maximum Uncertainty Based Removal**: Removes landmarks with the highest uncertainty first.
-3. **K-Cover Based Removal**: Uses a greedy algorithm to cover the most poses with the fewest landmarks, then removes landmarks in reverse order.
+3. **K-Cover Based Removal**: This method uses a greedy algorithm to cover the most poses with the fewest landmarks and then removes landmarks in reverse order.
 4. **Least Informative Landmark Based Removal**: Computes the mutual information of each landmark and removes the least informative ones.
 5. **Least Reprojection Error Based Removal**: Removes landmarks based on their reprojection error from low to high.
 
@@ -24,7 +24,7 @@ The Focused Inference Project is an advanced research initiative aimed at improv
 
 1. **Average Trajectory Error (ATE)**: Measures the RMSE of pose translation differences between standard SLAM and reduced landmark SLAM.
 2. **Average Rotation Error (ARE)**: Measures the average angular difference in pose heading directions.
-3. **Uncertainty Determinant (UD)**: Evaluates the change in uncertainty of the latest pose by comparing the determinant of its covariance.
+3. **Uncertainty Determinant (UD)**: Evaluate the change in the uncertainty of the latest pose by comparing the determinant of its covariance.
 
 ## Project Structure
 Focused Inference Project/
