@@ -93,15 +93,3 @@ Focused Inference Project/
     python main.py
     ```
 
-### Usage
-
-The project is designed to be modular and extensible. You can add new landmark removal algorithms and evaluation metrics by extending the relevant modules. The main script `main.py` provides an entry point to run and visualize the SLAM process with reduced landmarks.
-
-### Contributing
-
-Contributions are welcome! Please fork the repository and submit pull requests for any improvements or new features.
-
-## License
-
-This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
-
