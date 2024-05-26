@@ -1,120 +1,44 @@
 """
-This module provides utility functions for computing various metrics,
- used in landmark removal algorithms.
+This module provides utility functions for information-theoretic computations.
 """
 
 import numpy as np
+import gtsam
 
+def compute_information_gain(agent, landmark, poses):
+    try:
+        # Assuming `agent.position` returns a numpy array
+        agent_position = agent.position
+        agent_covariance = agent.position_covariance
 
-def compute_degree(landmarks, poses):
-    """
-    Compute the degree of each landmark.
+        # Compute mutual information between the agent's position and the landmark
+        X = [0]  # Placeholder, replace with the actual variable indices in the factor graph
+        g_theta = gtsam.NonlinearFactorGraph()  # Placeholder, replace with the actual factor graph
+        theta_star = gtsam.Values()  # Placeholder, replace with the actual values
 
-    Args:
-        landmarks (list): List of Landmark objects.
-        poses (list): List of poses.
+        log_det_theta = log_det(X + [landmark.identifier], g_theta, theta_star)
+        reduced_graph = gtsam.NonlinearFactorGraph(g_theta)
+        reduced_graph.remove(landmark.identifier)
+        reduced_theta_star = gtsam.Values(theta_star)
+        reduced_theta_star.erase(landmark.identifier)
+        log_det_theta_reduced = log_det(X, reduced_graph, reduced_theta_star)
 
-    Returns:
-        dict: A dictionary with landmarks' identifiers as keys and their degrees as values.
-    """
-    degrees = {lm.identifier: 0 for lm in landmarks}
+        return 0.5 * (log_det_theta_reduced - log_det_theta)
+    except Exception as e:
+        print(f"Error computing information gain: {e}")
+        return 0
 
-    # Example: Each landmark observed by a random subset of poses
-    for _ in poses:
-        observed_landmarks = np.random.choice(landmarks,
-                                              size=np.random.randint(1, len(landmarks)),
-                                              replace=False)
-        for lm in observed_landmarks:
-            degrees[lm.identifier] += 1
-
-    return degrees
-
-
-def compute_uncertainty(landmarks):
-    """
-    Compute the uncertainty of each landmark.
-
-    Args:
-        landmarks (list): List of Landmark objects.
-
-    Returns:
-        dict: A dictionary with landmarks' identifiers as keys and their uncertainties as values.
-    """
-    uncertainties = {}
-    for lm in landmarks:
-        uncertainties[lm.identifier] = np.trace(lm.position_covariance)
-
-    return uncertainties
-
-
-def k_cover_algorithm(landmarks, poses, k):
-    """
-    Run the K-Cover algorithm to find the K-cover landmarks.
-
-    Args:
-        landmarks (list): List of Landmark objects.
-        poses (list): List of poses.
-        k (int): Number of covers.
-
-    Returns:
-        list: A list of Landmark objects that cover the most poses.
-    """
-    cover_landmarks = []
-    uncovered_poses = set(poses)
-
-    while len(uncovered_poses) > 0 and len(cover_landmarks) < k:
-        best_landmark = None
-        best_cover = 0
-
-        for lm in landmarks:
-            # Randomly decide if a landmark covers a pose
-            cover_count = sum(
-                1 for pose in uncovered_poses if np.random.rand() > 0.5)
-            if cover_count > best_cover:
-                best_cover = cover_count
-                best_landmark = lm
-
-        if best_landmark:
-            cover_landmarks.append(best_landmark)
-            uncovered_poses -= set(np.random.choice(list(uncovered_poses),
-                                                    size=best_cover,
-                                                    replace=False))
-
-    return cover_landmarks
-
-
-def compute_mutual_information(landmarks, poses):
-    """
-    Compute the mutual information of each landmark,
-    w.r.t the rest of the landmarks and poses.
-
-    Args:
-        landmarks (list): List of Landmark objects.
-        poses (list): List of poses.
-
-    Returns:
-        dict: A dictionary with landmarks' identifiers as keys
-         and their mutual information as values.
-    """
-    mutual_information = {lm.identifier: np.random.rand() for lm in
-                          landmarks}  # Placeholder: Random value for mutual information
-
-    return mutual_information
-
-
-def compute_reprojection_error(landmarks, poses):
-    """
-    Compute the reprojection error of each landmark.
-
-    Args:
-        landmarks (list): List of Landmark objects.
-        poses (list): List of poses.
-
-    Returns:
-        dict: A dictionary with landmarks' identifiers as keys
-        and their reprojection errors as values.
-    """
-    reprojection_errors = {lm.identifier: np.random.rand() for lm in
-                           landmarks}  # Placeholder: Random value for reprojection error
-
-    return reprojection_errors
+def log_det(X, g_theta, theta_star):
+    try:
+        ordering = gtsam.Ordering()
+        for var in X:
+            ordering.push_back(var)
+        linearized_graph = g_theta.linearize(theta_star)
+        bayes_net, bayes_tree = linearized_graph.eliminatePartialSequential(ordering)
+        marginals = gtsam.Marginals(g_theta, theta_star)
+        r_matrix = marginals.marginalCovariance(ordering.front())
+        log_det = -2 * np.sum(np.log(np.diag(r_matrix)))
+        return log_det
+    except Exception as e:
+        print(f"Error computing marginal covariance: {e}")
+        return 0

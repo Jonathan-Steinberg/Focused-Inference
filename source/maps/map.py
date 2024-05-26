@@ -4,6 +4,7 @@ This module provides the Map class for managing the spatial relationships
 """
 
 from source.landmarks.landmark import Landmark
+import numpy as np
 
 class Map:
     """
@@ -81,16 +82,4 @@ class Map:
         """
         return self.landmarks.get(landmark_id, None)
 
-    def visualize_map(self):
-        """
-        Visualize the map including the agent and landmarks.
-        """
-        # Placeholder for visualization logic, potentially using matplotlib or similar
-        pass
 
-# Example usage:
-# from source.agents.agent import Agent
-# agent = Agent(np.array([5, 5, 5]), np.eye(3))
-# map_instance = Map(agent)
-# map_instance.add_landmark("landmark1", Landmark("landmark1", np.array([10, 20, 30]), np.eye(3)))
-# map_instance.update_agent_position(np.array([1, 1, 1]), np.eye(3))

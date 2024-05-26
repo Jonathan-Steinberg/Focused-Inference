@@ -7,7 +7,6 @@ This module provides functions to evaluate SLAM performance using different metr
 
 import numpy as np
 
-
 def compute_ate(estimated_poses, ground_truth_poses):
     """
     Compute the Average Trajectory Error (ATE).
@@ -36,17 +35,15 @@ def compute_are(estimated_rotations, ground_truth_rotations):
         ground_truth_rotations (numpy.ndarray): Array of ground truth rotations (N, 3).
 
     Returns:
-        float: The average angular difference in degrees between
-         estimated and ground truth rotations.
+        float: The average angular difference in degrees between estimated and ground truth rotations.
     """
     if estimated_rotations.shape != ground_truth_rotations.shape:
         raise ValueError("Estimated and ground truth rotations must have the same shape.")
 
     dot_products = np.einsum('ij,ij->i',
-                             estimated_rotations,
-                             ground_truth_rotations)
+                             estimated_rotations.reshape(-1, 3),
+                             ground_truth_rotations.reshape(-1, 3))
     dot_products = np.clip(dot_products, -1.0, 1.0)
-    # Ensure the values are within the valid range for acos
     angular_errors = np.arccos(dot_products) * (180.0 / np.pi)
     are = np.mean(angular_errors)
     return are

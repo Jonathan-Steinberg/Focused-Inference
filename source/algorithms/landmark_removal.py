@@ -74,7 +74,7 @@ class LandmarkRemoval:
         self._landmarks = {lm.identifier: lm for lm in sorted_landmarks}
         return self.landmarks
 
-    def k_cover_removal(self, k):
+    def k_cover_removal(self, k=1):
         """
         Remove landmarks based on the K-Cover algorithm.
 
@@ -116,6 +116,18 @@ class LandmarkRemoval:
         for landmark in sorted_landmarks:
             del self._landmarks[landmark.identifier]
         return self.landmarks
+
+    @staticmethod
+    def get_algorithm_names():
+        """Get the names of the algorithms."""
+        return [
+            "least_degree_removal",
+            "max_uncertainty_removal",
+            "k_cover_removal",
+            "least_informative_removal",
+            "least_reprojection_error_removal"
+        ]
+
 
 # Example usage:
 if __name__ == "__main__":
