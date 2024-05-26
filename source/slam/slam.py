@@ -7,6 +7,7 @@ import gtsam
 # source/slam/slam.py
 
 import numpy as np
+import gtsam
 from gtsam import (Values, NonlinearFactorGraph, GaussNewtonOptimizer,
                    Pose3, PriorFactorPose3, BetweenFactorPose3, Marginals, Rot3)
 from source.agents.agent import Agent
@@ -23,13 +24,13 @@ class SLAM:
         Initialize the SLAM class.
 
         Args:
-            initial_pose (numpy.ndarray): Initial pose of the agent.
+            initial_pose (Pose3): Initial pose of the agent.
             landmarks (list of Landmark): List of landmarks.
             minimization_interval (int): Interval at which to perform landmark minimization.
         """
-        self.agent = Agent(position=Pose3(Rot3(), initial_pose))
+        self.agent = Agent(position=initial_pose)
         self._landmarks = {lm.identifier: lm for lm in landmarks}
-        self._poses = [Pose3(Rot3(), initial_pose)]
+        self._poses = [initial_pose]
         self.minimization_interval = minimization_interval
         self.step_count = 0
 
@@ -39,9 +40,8 @@ class SLAM:
 
         # Add prior on the first pose
         prior_noise = gtsam.noiseModel.Diagonal.Sigmas(np.array([0.1, 0.1, 0.1, 0.1, 0.1, 0.1]))
-        initial_pose_gtsam = Pose3(Rot3(), initial_pose)
-        self.graph.add(PriorFactorPose3(0, initial_pose_gtsam, prior_noise))
-        self.initial_estimate.insert(0, initial_pose_gtsam)
+        self.graph.add(PriorFactorPose3(0, initial_pose, prior_noise))
+        self.initial_estimate.insert(0, initial_pose)
 
     @property
     def landmarks(self):
@@ -80,15 +80,12 @@ class SLAM:
         # Update landmarks based on measurements
         for measurement in measurements:
             lm_id = measurement['id']
-            observation = measurement['observation']
             if lm_id in self._landmarks:
                 lm = self._landmarks[lm_id]
-                lm.update_position(Pose3(Rot3(), observation['mean'].reshape((3, 1))), observation['covariance'])
-
-        # Perform graph optimization periodically
-        self.step_count += 1
-        # if self.step_count % self.minimization_interval == 0:
-        #    self.perform_information_theoretic_minimization()
+                observation_mean = measurement.get('mean')
+                observation_covariance = measurement.get('covariance')
+                if observation_mean is not None and observation_covariance is not None:
+                    lm.update_position(Pose3(Rot3(), observation_mean.reshape((3, 1))), observation_covariance)
 
         # Calculate marginals for the current pose
         marginals = Marginals(self.graph, self.initial_estimate)
@@ -99,12 +96,3 @@ class SLAM:
             self.agent.position_covariance = position_covariance
         except Exception as e:
             print(f"Error computing marginal covariance: {e}")
-
-    def perform_information_theoretic_minimization(self):
-        """
-        Perform information-theoretic minimization to reduce the number of landmarks.
-        """
-        information_gains = {lm_id: compute_information_gain(self.agent.position, lm, self.poses) for lm_id, lm in self.landmarks.items()}
-        sorted_landmarks = sorted(information_gains, key=information_gains.get, reverse=True)
-        num_landmarks_to_keep = int(len(self.landmarks) * 0.5)
-        self._landmarks = {lm_id: self.landmarks[lm_id] for lm_id in sorted_landmarks[:num_landmarks_to_keep]}

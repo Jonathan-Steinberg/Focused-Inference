@@ -6,16 +6,12 @@ from gtsam import Pose3, Rot3
 
 # source/run.py
 
+import os
 import numpy as np
 from source.info_theoretic.evals import compute_ate, compute_are, compute_ud
 
-def run_slam(slam_system, visualizer, control_inputs, measurements, ground_truth_poses, num_steps):
-    results = {
-        'landmarks_removed': [],
-        'ate_values': [],
-        'are_values': [],
-        'ud_values': []
-    }
+def run_slam(slam_system, control_inputs, measurements, ground_truth_poses, num_steps, poses_dir, metrics_dir):
+    results = {'landmarks_removed': [], 'ate_values': [], 'are_values': [], 'ud_values': []}
 
     for step in range(num_steps):
         control_input = control_inputs[step]
@@ -23,29 +19,37 @@ def run_slam(slam_system, visualizer, control_inputs, measurements, ground_truth
 
         try:
             slam_system.perform_slam_step(control_input, measurement)
-            visualizer.update_agent_position(slam_system.agent.position.translation().flatten())
-            visualizer.update_landmarks(np.array([lm.position.translation().flatten() for lm in slam_system.landmarks.values()]))
-            visualizer.update()
+            estimated_poses = slam_system.poses
+            ground_truth_subset = ground_truth_poses[:len(estimated_poses)]
 
-            estimated_poses = np.array([pose.translation().flatten() for pose in slam_system.poses])
-            ground_truth_poses_array = np.array([pose.flatten() for pose in ground_truth_poses[:len(slam_system.poses)]])
+            # print(f"Step {step}: Estimated poses shape: ({len(estimated_poses)},), Ground truth poses shape: ({len(ground_truth_subset)}, 3)")
 
-            # print(f"Step {step}: Estimated poses shape: {estimated_poses.shape}, Ground truth poses shape: {ground_truth_poses_array.shape}")
+            # Extract translation components for metric computation
+            estimated_positions = np.array([pose.translation() for pose in estimated_poses])
+            ground_truth_positions = np.array([pose.translation() for pose in ground_truth_subset])
 
-            if estimated_poses.shape != ground_truth_poses_array.shape:
-                raise ValueError("Estimated and ground truth poses must have the same shape.")
+            # print(f"Step {step}: Estimated positions shape: {estimated_positions.shape}, Ground truth positions shape: {ground_truth_positions.shape}")
 
-            ate = compute_ate(estimated_poses, ground_truth_poses_array)
-            estimated_rotations = np.array([pose.rotation().matrix() for pose in slam_system.poses])
-            ground_truth_rotations = np.array([Pose3(Rot3(), gt_pose.reshape((3, 1))).rotation().matrix() for gt_pose in ground_truth_poses[:len(slam_system.poses)]])
-            are = compute_are(estimated_rotations, ground_truth_rotations)
-            ud = compute_ud(slam_system.agent.position_covariance, np.eye(3))
+            # Ensure the shapes are correct
+            if estimated_positions.shape == ground_truth_positions.shape:
+                # Compute metrics
+                ate = compute_ate(estimated_positions, ground_truth_positions)
+                are = compute_are(
+                    np.array([pose.rotation().rpy() for pose in estimated_poses]),  # using rpy() instead of xyz()
+                    np.array([pose.rotation().rpy() for pose in ground_truth_subset])
+                )
+                ud = compute_ud(np.eye(3), np.eye(3))  # Dummy covariances for example
 
-            results['landmarks_removed'].append(len(slam_system.landmarks))
-            results['ate_values'].append(ate)
-            results['are_values'].append(are)
-            results['ud_values'].append(ud)
+                results['landmarks_removed'].append(0)  # Placeholder value
+                results['ate_values'].append(ate)
+                results['are_values'].append(are)
+                results['ud_values'].append(ud)
 
+                # Save poses and metrics to files
+                np.save(os.path.join(poses_dir, f'estimated_poses_step_{step}.npy'), estimated_positions)
+                np.save(os.path.join(metrics_dir, f'metrics_step_{step}.npy'), [ate, are, ud])
+            else:
+                print(f"Error computing metrics: Estimated and ground truth positions must have the same shape.")
         except Exception as e:
             print(f"Error during SLAM step: {e}")
 
